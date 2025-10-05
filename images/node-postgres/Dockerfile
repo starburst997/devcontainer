@@ -10,6 +10,9 @@ ENV POSTGRES_VERSION=${POSTGRES_VERSION} \
     POSTGRES_DB=postgres \
     POSTGRES_PASSWORD=postgres
 
+# Reset shell to bash for installation commands
+SHELL ["/bin/bash", "-c"]
+
 # Install PostgreSQL
 USER root
 RUN export DEBIAN_FRONTEND=noninteractive \
