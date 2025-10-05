@@ -1,0 +1,25 @@
+{
+  "id": "nodejs",
+  "version": "1.0.0",
+  "name": "Node.js Development",
+  "description": "Node.js development environment with pnpm, PowerLevel10k, neovim, Claude Code, and GitHub CLI",
+  "documentationURL": "https://github.com/starburst997/devcontainer",
+  "licenseURL": "https://github.com/starburst997/devcontainer/blob/main/LICENSE",
+  "platforms": [
+    "Node.js",
+    "JavaScript",
+    "TypeScript"
+  ],
+  "keywords": [
+    "node",
+    "nodejs",
+    "javascript",
+    "typescript",
+    "pnpm",
+    "powerlevel10k",
+    "zsh",
+    "neovim",
+    "claude",
+    "gh"
+  ]
+}

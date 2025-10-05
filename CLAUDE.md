@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This repository provides reusable development container configurations, including pre-built Docker images, templates, and features for VS Code dev containers. It focuses on creating consistent, portable development environments.
 
+**Architecture Philosophy:**
+- **Pre-built Images**: Tools and runtimes are baked into Docker images for speed
+- **Features**: User preferences and optional components (VS Code extensions, etc.)
+- **Templates**: Minimal glue connecting images, features, and local mounts
+
 ## Common Development Commands
 
 ### Building and Publishing
@@ -48,24 +53,35 @@ The release workflow (`.github/workflows/release.yml`) handles the entire publis
 
 ### Docker Image Structure
 
-The `images/node/` directory contains the base Node.js development environment:
-- **Base**: Microsoft's official Node.js devcontainer image
-- **Enhancements**: PowerLevel10k theme, Neovim, Claude Code CLI, GitHub CLI
-- **Persistence**: Command history mounted at `/commandhistory/`
-- **Configuration**: Automated setup via `setup-p10k.sh`
+The repository contains two pre-built images:
+
+**`images/node/`** - Base Node.js environment:
+- **Base**: Microsoft's official Node.js devcontainer (Node 24, Debian Bookworm)
+- **Package Manager**: pnpm pre-installed globally
+- **Shell**: PowerLevel10k theme with automated setup
+- **Tools**: Neovim, Claude Code CLI, GitHub CLI
+- **Configuration**: History persistence setup, common aliases
+
+**`images/node-postgres/`** - Extends node with PostgreSQL:
+- **Base**: `FROM ghcr.io/starburst997/devcontainer/node:latest`
+- **Database**: PostgreSQL 17 with supervisor
+- **Auto-start**: Script at `/usr/local/share/postgres/start.sh`
+- **Metadata**: Contains `devcontainer.metadata` LABEL with `postStartCommand`, `forwardPorts`, and `containerEnv`
+- **Persistence**: Expects volume mount at `/var/lib/postgresql/data`
 
 ### Template and Feature System
 
-Templates in `templates/` and Features in `features/` follow the devcontainer specification:
-- `devcontainer-template.json`: Metadata and configurable options
-- `.devcontainer/devcontainer.json`: Container configuration
-- `.devcontainer/docker-compose.yml`: Multi-service setup (app + database)
+**Templates** (`templates/`) are minimal devcontainer configurations:
+- **nodejs**: Uses `node` image + `settings` feature + local mounts
+- **nodejs-postgres**: Uses `node-postgres` image + `settings` feature + local mounts + postgres volume
 
-The `nodejs-postgres` template provides:
-- Parameterized Node.js and PostgreSQL versions
-- Pre-configured VS Code extensions
-- SSH agent forwarding support
-- Git config synchronization
+Templates are intentionally minimal - most configuration lives in the images and features.
+
+**Features** (`features/`) provide optional, composable functionality:
+- **settings**: VS Code extensions, editor config, lifecycle commands (postCreate, postStart)
+- **postgres**: Reference implementation of embedded PostgreSQL (not used in templates; images used instead)
+
+**Key Principle**: Templates = Image + Feature(s) + Mounts. Everything else is pre-built.
 
 ## Adding New Components
 
@@ -92,5 +108,7 @@ The `nodejs-postgres` template provides:
 - **Versioning**: Uses semantic versioning via git tags only (starts at v1.0.0, auto-increments minor version)
 - **Registry**: All artifacts published to GitHub Container Registry (ghcr.io)
 - **Multi-arch**: Docker images support both amd64 and arm64 architectures
-- **Template Variables**: Support dynamic values via devcontainer-template.json options
 - **Image Tags**: Both versioned (1.x.x) and latest tags are published
+- **Image Metadata**: OCI labels and devcontainer.metadata LABELs are in Dockerfiles
+- **Volume Mounts**: Cannot be moved to Dockerfiles - require `${devcontainerId}` variable from devcontainer.json
+- **Pre-built Strategy**: Tools/runtimes in images (fast), preferences in features (flexible), local config in mounts (secure)

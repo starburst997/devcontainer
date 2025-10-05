@@ -49,19 +49,8 @@ jobs:
           echo "Latest tag: $LATEST_TAG"
           echo "New tag: $NEW_TAG"
 
-      - name: Check if tag exists
-        id: check_tag
-        run: |
-          if git rev-parse "${{ steps.get_tag.outputs.new_tag }}" >/dev/null 2>&1; then
-            echo "Tag already exists, skipping release"
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Generate changelog
         id: changelog
-        if: steps.check_tag.outputs.skip == 'false'
         run: |
           LATEST_TAG="${{ steps.get_tag.outputs.latest_tag }}"
 
@@ -82,11 +71,9 @@ jobs:
           echo "Changelog generated"
 
       - name: Set up Docker Buildx
-        if: steps.check_tag.outputs.skip == 'false'
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
-        if: steps.check_tag.outputs.skip == 'false'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -94,7 +81,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker images
-        if: steps.check_tag.outputs.skip == 'false'
         run: |
           # Loop through all image directories
           for IMAGE_DIR in images/*/; do
@@ -120,11 +106,9 @@ jobs:
           done
 
       - name: Install Dev Container CLI
-        if: steps.check_tag.outputs.skip == 'false'
         run: npm install -g @devcontainers/cli
 
       - name: Publish Templates and Features
-        if: steps.check_tag.outputs.skip == 'false'
         run: |
           # Update versions in all template files
           for template in templates/*/devcontainer-template.json; do
@@ -161,7 +145,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create and push tag
-        if: steps.check_tag.outputs.skip == 'false'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -169,7 +152,6 @@ jobs:
           git push origin "${{ steps.get_tag.outputs.new_tag }}"
 
       - name: Create GitHub Release
-        if: steps.check_tag.outputs.skip == 'false'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.get_tag.outputs.new_tag }}

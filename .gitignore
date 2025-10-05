@@ -11,7 +11,6 @@ build/
 Thumbs.db
 
 # IDE
-.vscode/
 .idea/
 
 # Temp files

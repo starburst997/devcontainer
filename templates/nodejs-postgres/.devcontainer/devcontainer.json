@@ -1,14 +1,13 @@
 {
   "name": "${localWorkspaceFolderBasename}",
-  "image": "ghcr.io/starburst997/devcontainer/node:latest",
+  "image": "ghcr.io/starburst997/devcontainer/node-postgres:latest",
   "features": {
-    "ghcr.io/devcontainers-extra/features/pnpm": "latest",
-    "ghcr.io/starburst997/features/settings": "latest",
-    "ghcr.io/starburst997/features/postgres": "latest"
+    "ghcr.io/starburst997/features/settings": "latest"
   },
   "mounts": [
     "source=${localEnv:SSH_AUTH_SOCK},target=/run/host-services/ssh-auth.sock,type=bind,readonly",
     "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
+    "source=devcontainer-postgres-data-${devcontainerId},target=/var/lib/postgresql/data,type=volume",
     "source=${localEnv:HOME}/.claude,target=/root/.claude,type=bind",
     "source=${localEnv:HOME}/.config/gh,target=/root/.config/gh,type=bind",
     "source=${localEnv:HOME}/.p10k.zsh,target=/root/.p10k.zsh,type=bind,readonly"

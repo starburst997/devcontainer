@@ -62,42 +62,79 @@ volumes:
 
 ## Available Templates
 
-### `nodejs-postgres`
+### `nodejs`
 
-Node.js development environment with PostgreSQL database, including:
+Minimal Node.js development environment:
 
-- **Node.js 24** (configurable)
-- **PostgreSQL** (configurable version)
+- **Node.js 24** with **pnpm** pre-installed
 - **PowerLevel10k** - Beautiful zsh prompt
 - **Neovim** - Modern vim editor
 - **Claude Code** - AI-powered coding assistant
 - **GitHub CLI** - GitHub integration
-- **Common aliases** - Productivity shortcuts
+- **VS Code extensions** - Via settings feature
 
 **Features:**
 - SSH agent forwarding (1Password support)
 - Git config synchronization
 - Persistent command history
-- VS Code extensions pre-installed
-- PostgreSQL database ready to use
+
+### `nodejs-postgres`
+
+Node.js development environment with embedded PostgreSQL:
+
+- Everything from `nodejs` template
+- **PostgreSQL 17** running inside the container
+- Persistent database storage via Docker volume
+- Auto-starts on container launch
+
+**Features:**
+- PostgreSQL accessible at `localhost:5432`
+- Default credentials: `postgres/postgres`
+- Data persists across container rebuilds
+- No docker-compose needed
 
 ## Pre-built Images
 
 ### `ghcr.io/starburst997/devcontainer/node:latest`
 
-A fully-configured development environment based on Microsoft's official Node.js devcontainer, enhanced with:
+Base Node.js development environment with everything pre-installed:
 
-- PowerLevel10k theme for zsh
-- Neovim
-- Claude Code CLI
-- GitHub CLI (gh)
-- Persistent bash/zsh history
+- **Node.js 24** (Debian Bookworm base)
+- **pnpm** - Fast, disk space efficient package manager
+- **PowerLevel10k** - Customizable zsh theme
+- **Neovim** - Modern vim editor
+- **Claude Code CLI** - AI-powered development
+- **GitHub CLI (gh)** - GitHub integration
+- Persistent bash/zsh history support
 - Common shell aliases
 - Multi-architecture support (amd64, arm64)
 
 **Tags:**
 - `latest` - Always the newest version
 - `1.x.x` - Specific version (e.g., `1.0.0`, `1.1.0`)
+
+### `ghcr.io/starburst997/devcontainer/node-postgres:latest`
+
+Extends the `node` image with embedded PostgreSQL:
+
+- Everything from `node` image
+- **PostgreSQL 17** pre-installed and configured
+- **Supervisor** for process management
+- Auto-initialization on first start
+- Configured for remote connections
+
+**Connection:**
+- Host: `localhost`
+- Port: `5432`
+- User: `postgres`
+- Password: `postgres`
+- Database: `postgres`
+
+**Tags:**
+- `latest` - Always the newest version
+- `1.x.x` - Specific version
+
+**Note:** Requires volume mount at `/var/lib/postgresql/data` for persistence
 
 ## How It Works
 
@@ -152,19 +189,27 @@ devcontainer/
 ├── .github/
 │   └── workflows/
 │       └── release.yml          # Automated publishing workflow
-├── images/
-│   └── node/                   # Node.js Docker image
+├── images/                      # Docker Images (pre-built)
+│   ├── node/                   # Base Node.js environment
+│   │   ├── Dockerfile
+│   │   └── setup-p10k.sh
+│   └── node-postgres/          # Node.js + PostgreSQL
 │       ├── Dockerfile
-│       └── setup-p10k.sh
+│       └── start-postgres.sh
 ├── templates/                  # Dev Container Templates
-│   ├── nodejs-postgres/        # Full Node.js + PostgreSQL setup
-│   ├── nodejs-postgres-feature/# Using Feature for settings
-│   └── nodejs-ultra-minimal/   # Single container with embedded PostgreSQL
+│   ├── nodejs/                 # Minimal Node.js setup
+│   │   ├── devcontainer-template.json
+│   │   └── .devcontainer/
+│   │       └── devcontainer.json
+│   └── nodejs-postgres/        # Node.js + PostgreSQL setup
+│       ├── devcontainer-template.json
+│       └── .devcontainer/
+│           └── devcontainer.json
 ├── features/                   # Dev Container Features
 │   ├── settings/               # VS Code extensions and dev settings
 │   │   ├── devcontainer-feature.json
 │   │   └── install.sh
-│   └── postgres/               # Embedded PostgreSQL with persistent volume
+│   └── postgres/               # Embedded PostgreSQL (for reference)
 │       ├── devcontainer-feature.json
 │       └── install.sh
 └── README.md

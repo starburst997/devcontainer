@@ -56,6 +56,9 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
     && apt update \
     && apt install gh -y
 
+# Install pnpm
+RUN npm install -g pnpm
+
 SHELL ["/bin/zsh", "-c"]
 
 # Version argument passed from build
@@ -65,7 +68,7 @@ ARG GITHUB_SHA
 
 # Image metadata following OCI Image Spec
 LABEL org.opencontainers.image.title="Node Dev Container" \
-      org.opencontainers.image.description="Node.js development environment with PowerLevel10k, neovim, Claude Code, and GitHub CLI" \
+      org.opencontainers.image.description="Node.js development environment with pnpm, PowerLevel10k, neovim, Claude Code, and GitHub CLI" \
       org.opencontainers.image.source="https://github.com/starburst997/devcontainer" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.created="${BUILD_DATE}" \
