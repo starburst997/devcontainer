@@ -82,9 +82,10 @@ jobs:
 
       - name: Build and push Docker images
         run: |
-          # Loop through all image directories
-          for IMAGE_DIR in images/*/; do
-            if [ -d "$IMAGE_DIR" ] && [ -f "$IMAGE_DIR/Dockerfile" ]; then
+          # Sort image directories by name length (shortest first) to ensure base images build before derived
+          # e.g., "node" builds before "node-postgres"
+          for IMAGE_DIR in $(find images/ -maxdepth 1 -mindepth 1 -type d | awk '{print length, $0}' | sort -n | cut -d' ' -f2-); do
+            if [ -f "$IMAGE_DIR/Dockerfile" ]; then
               IMAGE_NAME=$(basename "$IMAGE_DIR")
               echo "Building image: $IMAGE_NAME"
 

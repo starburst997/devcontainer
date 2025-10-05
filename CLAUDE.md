@@ -103,6 +103,12 @@ Templates are intentionally minimal - most configuration lives in the images and
 3. Include build args: VERSION, BUILD_DATE, GITHUB_SHA
 4. Push to main - workflow automatically discovers and builds all images
 
+**Important for derived images:**
+- Use naming convention: base images have shorter names (e.g., `node`)
+- Derived images use longer names with prefix (e.g., `node-postgres`, `node-python`)
+- Workflow sorts by name length, building base images first
+- Derived images can safely `FROM ghcr.io/.../base:latest` - it will use the just-built local image
+
 ## Important Implementation Details
 
 - **Versioning**: Uses semantic versioning via git tags only (starts at v1.0.0, auto-increments minor version)
