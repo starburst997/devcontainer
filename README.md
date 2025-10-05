@@ -41,7 +41,7 @@ version: "3.8"
 
 services:
   app:
-    image: ghcr.io/starburst997/devcontainer/personal-dev:latest
+    image: ghcr.io/starburst997/devcontainer/node:latest
     volumes:
       - ../..:/workspaces:cached
     command: sleep infinity
@@ -83,7 +83,7 @@ Node.js development environment with PostgreSQL database, including:
 
 ## Pre-built Images
 
-### `ghcr.io/starburst997/devcontainer/personal-dev:latest`
+### `ghcr.io/starburst997/devcontainer/node:latest`
 
 A fully-configured development environment based on Microsoft's official Node.js devcontainer, enhanced with:
 
@@ -107,9 +107,9 @@ When you push to the `main` branch:
 
 1. **Version Detection** - Checks the latest git tag
 2. **Auto-increment** - Bumps the minor version (e.g., `v1.0.0` → `v1.1.0`)
-3. **Build Image** - Creates multi-arch Docker image
+3. **Build All Images** - Automatically discovers and builds all Dockerfiles in `images/`
 4. **Push to Registry** - Publishes to GitHub Container Registry (GHCR)
-5. **Publish Templates** - Makes templates available via OCI registry
+5. **Publish Templates & Features** - Makes them available via OCI registry
 6. **Create Release** - GitHub release with changelog
 
 ### Versioning
@@ -142,7 +142,7 @@ For production stability, pin to a specific version:
 ```yaml
 services:
   app:
-    image: ghcr.io/starburst997/devcontainer/personal-dev:1.2.0  # Specific version
+    image: ghcr.io/starburst997/devcontainer/node:1.2.0  # Specific version
 ```
 
 ## Repository Structure
@@ -153,16 +153,20 @@ devcontainer/
 │   └── workflows/
 │       └── release.yml          # Automated publishing workflow
 ├── images/
-│   └── personal-dev/           # Docker image source
+│   └── node/                   # Node.js Docker image
 │       ├── Dockerfile
 │       └── setup-p10k.sh
-├── src/
-│   ├── nodejs-postgres/        # Template: Node.js + PostgreSQL
-│   │   ├── devcontainer-template.json
-│   │   └── .devcontainer/
-│   │       ├── devcontainer.json
-│   │       └── docker-compose.yml
-│   └── [future-template]/      # Add more templates here
+├── templates/                  # Dev Container Templates
+│   ├── nodejs-postgres/        # Full Node.js + PostgreSQL setup
+│   ├── nodejs-postgres-feature/# Using Feature for settings
+│   └── nodejs-ultra-minimal/   # Single container with embedded PostgreSQL
+├── features/                   # Dev Container Features
+│   ├── settings/               # VS Code extensions and dev settings
+│   │   ├── devcontainer-feature.json
+│   │   └── install.sh
+│   └── postgres/               # Embedded PostgreSQL with persistent volume
+│       ├── devcontainer-feature.json
+│       └── install.sh
 └── README.md
 ```
 
@@ -170,7 +174,7 @@ devcontainer/
 
 To add a new template:
 
-1. Create a new folder in `src/`
+1. Create a new folder in `templates/`
 2. Add `devcontainer-template.json` with metadata
 3. Add `.devcontainer/` folder with configuration
 4. Push to `main` - it will be automatically published
@@ -178,7 +182,7 @@ To add a new template:
 Example structure:
 
 ```
-src/
+templates/
 └── my-template/
     ├── devcontainer-template.json
     └── .devcontainer/
@@ -186,14 +190,40 @@ src/
         └── docker-compose.yml (optional)
 ```
 
+## Creating New Features
+
+To add a new Feature:
+
+1. Create a new folder in `features/`
+2. Add `devcontainer-feature.json` with metadata and contributed properties
+3. Add `install.sh` for installation logic
+4. Push to `main` - it will be automatically published
+
+Features are published to: `ghcr.io/starburst997/features/[feature-name]`
+
+### Available Features
+
+- **`settings`**: Configures VS Code extensions, dev environment settings
+- **`postgres`**: Installs PostgreSQL with persistent volume inside the container
+
 ## Creating New Images
 
 To add a new image:
 
 1. Create a new folder in `images/`
-2. Add your `Dockerfile`
-3. Update the workflow to build your image
-4. Push to `main` - it will be automatically built and published
+2. Add your `Dockerfile` with proper labels:
+   ```dockerfile
+   ARG VERSION
+   ARG BUILD_DATE
+   ARG GITHUB_SHA
+
+   LABEL org.opencontainers.image.title="Your Image Title" \
+         org.opencontainers.image.description="Your description" \
+         org.opencontainers.image.version="${VERSION}" \
+         org.opencontainers.image.created="${BUILD_DATE}" \
+         org.opencontainers.image.revision="${GITHUB_SHA}"
+   ```
+3. Push to `main` - workflow automatically discovers and builds all images
 
 ## Customization
 

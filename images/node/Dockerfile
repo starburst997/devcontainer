@@ -58,5 +58,18 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
 
 SHELL ["/bin/zsh", "-c"]
 
-# Add labels for dev container metadata
-LABEL dev.containers.metadata='{"version":"1.0.0","description":"Personal development environment with Node.js, PowerLevel10k, neovim, Claude Code, and GitHub CLI"}'
+# Version argument passed from build
+ARG VERSION
+ARG BUILD_DATE
+ARG GITHUB_SHA
+
+# Image metadata following OCI Image Spec
+LABEL org.opencontainers.image.title="Node Dev Container" \
+      org.opencontainers.image.description="Node.js development environment with PowerLevel10k, neovim, Claude Code, and GitHub CLI" \
+      org.opencontainers.image.source="https://github.com/starburst997/devcontainer" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${GITHUB_SHA}" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.vendor="starburst997" \
+      org.opencontainers.image.documentation="https://github.com/starburst997/devcontainer/blob/main/README.md"

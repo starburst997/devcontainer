@@ -1,0 +1,44 @@
+{
+  "id": "postgres",
+  "version": "1.0.0",
+  "name": "PostgreSQL (Embedded)",
+  "description": "Installs PostgreSQL inside the dev container with persistent data volume",
+  "documentationURL": "https://github.com/starburst997/devcontainer",
+  "options": {
+    "version": {
+      "type": "string",
+      "proposals": ["18", "17", "16", "15", "14", "13", "12"],
+      "default": "17",
+      "description": "PostgreSQL version to install"
+    },
+    "password": {
+      "type": "string",
+      "default": "postgres",
+      "description": "PostgreSQL password for postgres user"
+    },
+    "database": {
+      "type": "string",
+      "default": "postgres",
+      "description": "Default database to create"
+    },
+    "port": {
+      "type": "string",
+      "default": "5432",
+      "description": "Port to expose PostgreSQL on"
+    }
+  },
+  "mounts": [
+    {
+      "source": "devcontainer-postgres-data-${devcontainerId}",
+      "target": "/var/lib/postgresql/data",
+      "type": "volume"
+    }
+  ],
+  "containerEnv": {
+    "PGDATA": "/var/lib/postgresql/data",
+    "POSTGRES_USER": "postgres",
+    "POSTGRES_DB": "${database}",
+    "POSTGRES_PASSWORD": "${password}"
+  },
+  "postStartCommand": "/usr/local/share/postgres/start.sh"
+}

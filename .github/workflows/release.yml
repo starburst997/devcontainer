@@ -93,42 +93,70 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push Docker images
         if: steps.check_tag.outputs.skip == 'false'
-        uses: docker/build-push-action@v5
-        with:
-          context: ./images/personal-dev
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/devcontainer/personal-dev:${{ steps.get_tag.outputs.new_version }}
-            ghcr.io/${{ github.repository_owner }}/devcontainer/personal-dev:latest
-          labels: |
-            org.opencontainers.image.title=Personal Dev Container
-            org.opencontainers.image.description=Personal development environment with Node.js, PowerLevel10k, neovim, Claude Code, and GitHub CLI
-            org.opencontainers.image.version=${{ steps.get_tag.outputs.new_version }}
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.licenses=MIT
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        run: |
+          # Loop through all image directories
+          for IMAGE_DIR in images/*/; do
+            if [ -d "$IMAGE_DIR" ] && [ -f "$IMAGE_DIR/Dockerfile" ]; then
+              IMAGE_NAME=$(basename "$IMAGE_DIR")
+              echo "Building image: $IMAGE_NAME"
+
+              # Build and push with buildx
+              docker buildx build \
+                --platform linux/amd64,linux/arm64 \
+                --push \
+                --tag ghcr.io/${{ github.repository_owner }}/devcontainer/${IMAGE_NAME}:${{ steps.get_tag.outputs.new_version }} \
+                --tag ghcr.io/${{ github.repository_owner }}/devcontainer/${IMAGE_NAME}:latest \
+                --build-arg VERSION=${{ steps.get_tag.outputs.new_version }} \
+                --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+                --build-arg GITHUB_SHA=${{ github.sha }} \
+                --cache-from type=gha,scope=${IMAGE_NAME} \
+                --cache-to type=gha,mode=max,scope=${IMAGE_NAME} \
+                "$IMAGE_DIR"
+
+              echo "Successfully pushed $IMAGE_NAME"
+            fi
+          done
 
       - name: Install Dev Container CLI
         if: steps.check_tag.outputs.skip == 'false'
         run: npm install -g @devcontainers/cli
 
-      - name: Publish Templates
+      - name: Publish Templates and Features
         if: steps.check_tag.outputs.skip == 'false'
         run: |
-          # Update template version in devcontainer-template.json
-          jq --arg version "${{ steps.get_tag.outputs.new_version }}" '.version = $version' \
-            src/nodejs-postgres/devcontainer-template.json > temp.json && \
-            mv temp.json src/nodejs-postgres/devcontainer-template.json
+          # Update versions in all template files
+          for template in templates/*/devcontainer-template.json; do
+            if [ -f "$template" ]; then
+              jq --arg version "${{ steps.get_tag.outputs.new_version }}" '.version = $version' \
+                "$template" > temp.json && mv temp.json "$template"
+            fi
+          done
+
+          # Update versions in all feature files
+          for feature in features/*/devcontainer-feature.json; do
+            if [ -f "$feature" ]; then
+              jq --arg version "${{ steps.get_tag.outputs.new_version }}" '.version = $version' \
+                "$feature" > temp.json && mv temp.json "$feature"
+            fi
+          done
 
           # Publish templates to GHCR
-          devcontainer templates publish \
-            -r ghcr.io \
-            -n ${{ github.repository_owner }}/devcontainer/templates \
-            ./src
+          if [ -d "templates" ]; then
+            devcontainer templates publish \
+              -r ghcr.io \
+              -n ${{ github.repository_owner }}/devcontainer/templates \
+              ./templates
+          fi
+
+          # Publish features to GHCR with /features/ namespace
+          if [ -d "features" ]; then
+            devcontainer features publish \
+              -r ghcr.io \
+              -n ${{ github.repository_owner }}/features \
+              ./features
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

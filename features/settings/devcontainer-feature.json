@@ -1,0 +1,51 @@
+{
+  "id": "settings",
+  "version": "1.0.0",
+  "name": "Dev Environment Settings",
+  "description": "Configures VS Code extensions, container settings, and development environment for personal development containers",
+  "documentationURL": "https://github.com/starburst997/devcontainer",
+  "options": {
+    "configureHistory": {
+      "type": "boolean",
+      "default": true,
+      "description": "Configure persistent command history"
+    },
+    "configureSsh": {
+      "type": "boolean",
+      "default": true,
+      "description": "Configure SSH agent forwarding"
+    },
+    "configureGitHub": {
+      "type": "boolean",
+      "default": true,
+      "description": "Configure GitHub CLI and tokens"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Prisma.prisma",
+        "ms-azuretools.vscode-containers",
+        "anysphere.remote-containers",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "rvest.vs-code-prettier-eslint",
+        "walnuts1018.oklch-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-azuretools.vscode-docker",
+        "streetsidesoftware.code-spell-checker",
+        "anthropic.claude-code",
+        "hookyqr.beautify",
+        "jdboivin.jd-abyss"
+      ],
+      "settings": {
+        "remote.containers.copyGitConfig": true
+      }
+    }
+  },
+  "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/root/.claude"
+  },
+  "postCreateCommand": "pnpm i --frozen-lockfile --force || npm install || echo 'No package manager config'",
+  "postStartCommand": "gh auth setup-git || true"
+}
