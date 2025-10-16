@@ -13,6 +13,10 @@ ENV POSTGRES_VERSION=${POSTGRES_VERSION} \
     POSTGRES_DB=postgres \
     POSTGRES_PASSWORD=postgres
 
+# Temporarily switch to bash for QEMU compatibility during installation
+# The base image uses zsh which causes issues with QEMU emulator on ARM64
+SHELL ["/bin/bash", "-c"]
+
 # Install PostgreSQL dependencies
 USER root
 ENV DEBIAN_FRONTEND=noninteractive
@@ -102,3 +106,6 @@ LABEL org.opencontainers.image.title="Node + PostgreSQL Dev Container" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.vendor="starburst997" \
       org.opencontainers.image.documentation="https://github.com/starburst997/devcontainer/blob/main/README.md"
+
+# Switch back to zsh to maintain compatibility with base image
+SHELL ["/bin/zsh", "-c"]
