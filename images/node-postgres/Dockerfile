@@ -3,7 +3,7 @@ ARG VERSION=latest
 
 # Use the node image as base - will be built in same workflow
 ARG BASE_IMAGE=ghcr.io/starburst997/devcontainer/node:${VERSION}
-FROM ${BASE_IMAGE}
+FROM --platform=$BUILDPLATFORM ${BASE_IMAGE}
 
 # PostgreSQL configuration
 ARG POSTGRES_VERSION=17
@@ -17,9 +17,8 @@ ENV POSTGRES_VERSION=${POSTGRES_VERSION} \
 USER root
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install PostgreSQL in a single layer to minimize QEMU invocations
-RUN set -ex \
-    && apt-get update \
+# Install PostgreSQL
+RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         gnupg \
