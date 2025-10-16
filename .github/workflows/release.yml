@@ -57,13 +57,20 @@ jobs:
               IMAGE_NAME=$(basename "$IMAGE_DIR")
               echo "Building image: $IMAGE_NAME"
 
+              # Extract version components for additional tags
+              VERSION=${{ steps.version.outputs.version }}
+              MAJOR=$(echo $VERSION | cut -d. -f1)
+              MAJOR_MINOR=$(echo $VERSION | cut -d. -f1-2)
+
               # Build and push with buildx
               docker buildx build \
                 --platform linux/amd64,linux/arm64 \
                 --push \
                 --tag ${{ env.REGISTRY }}/${{ github.repository_owner }}/devcontainer/${IMAGE_NAME}:latest \
-                --tag ${{ env.REGISTRY }}/${{ github.repository_owner }}/devcontainer/${IMAGE_NAME}:${{ steps.version.outputs.version }} \
-                --build-arg VERSION=${{ steps.version.outputs.version }} \
+                --tag ${{ env.REGISTRY }}/${{ github.repository_owner }}/devcontainer/${IMAGE_NAME}:$MAJOR \
+                --tag ${{ env.REGISTRY }}/${{ github.repository_owner }}/devcontainer/${IMAGE_NAME}:$MAJOR_MINOR \
+                --tag ${{ env.REGISTRY }}/${{ github.repository_owner }}/devcontainer/${IMAGE_NAME}:$VERSION \
+                --build-arg VERSION=$VERSION \
                 --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
                 --build-arg GITHUB_SHA=${{ github.sha }} \
                 --cache-from type=gha,scope=${IMAGE_NAME} \
