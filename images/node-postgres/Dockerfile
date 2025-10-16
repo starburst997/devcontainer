@@ -28,11 +28,12 @@ RUN export DEBIAN_FRONTEND=noninteractive \
         curl \
         sudo \
         supervisor \
-    # Add PostgreSQL repository using modern method
-    && install -d /usr/share/postgresql-common/pgdg \
-    && curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc \
-    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
-    # Install PostgreSQL
+    && rm -rf /var/lib/apt/lists/* \
+    # Add PostgreSQL official GPG key using modern method
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg \
+    # Add PostgreSQL APT repository for Bookworm
+    && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    # Update and install PostgreSQL
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         postgresql-${POSTGRES_VERSION} \
