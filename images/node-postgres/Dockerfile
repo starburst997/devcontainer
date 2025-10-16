@@ -18,8 +18,7 @@ USER root
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Step 1: Update and install base dependencies
-# Use simpler approach for cross-platform compatibility
-RUN apt-get update || true
+RUN apt-get update; exit 0
 RUN apt-get install -y ca-certificates gnupg
 RUN apt-get install -y curl wget
 RUN apt-get install -y lsb-release sudo supervisor
