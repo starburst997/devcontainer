@@ -13,9 +13,9 @@ ENV POSTGRES_VERSION=${POSTGRES_VERSION} \
     POSTGRES_DB=postgres \
     POSTGRES_PASSWORD=postgres
 
-# Temporarily switch to bash for QEMU compatibility during installation
+# Temporarily switch to sh for QEMU compatibility during installation
 # The base image uses zsh which causes issues with QEMU emulator on ARM64
-SHELL ["/bin/bash", "-c"]
+SHELL ["/bin/sh", "-c"]
 
 # Install PostgreSQL dependencies
 USER root
