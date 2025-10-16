@@ -1,5 +1,8 @@
+# Version argument - can be overridden at build time
+ARG VERSION=latest
+
 # Use the node image as base - will be built in same workflow
-ARG BASE_IMAGE=ghcr.io/starburst997/devcontainer/node:latest
+ARG BASE_IMAGE=ghcr.io/starburst997/devcontainer/node:${VERSION}
 FROM ${BASE_IMAGE}
 
 # PostgreSQL configuration
@@ -22,11 +25,13 @@ RUN export DEBIAN_FRONTEND=noninteractive \
         gnupg \
         lsb-release \
         wget \
+        curl \
         sudo \
         supervisor \
-    # Add PostgreSQL repository
-    && echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
-    && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
+    # Add PostgreSQL repository using modern method
+    && install -d /usr/share/postgresql-common/pgdg \
+    && curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
     # Install PostgreSQL
     && apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -68,7 +73,7 @@ killasgroup=true" > /etc/supervisor/conf.d/postgres.conf
 # Expose PostgreSQL port
 EXPOSE 5432
 
-# Version arguments for metadata
+# Build arguments for metadata
 ARG VERSION
 ARG BUILD_DATE
 ARG GITHUB_SHA
