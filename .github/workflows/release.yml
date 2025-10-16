@@ -9,66 +9,34 @@ permissions:
   contents: write
   packages: write
 
+env:
+  REGISTRY: ghcr.io
+
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      - name: Initialize custom bot
+        id: bot
+        uses: starburst997/custom-bot-init@v1
+        with:
+          app-id: ${{ secrets.BOT_ID }}
+          private-key: ${{ secrets.BOT_KEY }}
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ steps.bot.outputs.token }}
 
-      - name: Get latest tag
-        id: get_tag
-        run: |
-          # Get the latest tag, default to v0.0.0 if no tags exist
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-
-          # Parse version (remove 'v' prefix)
-          VERSION=${LATEST_TAG#v}
-          echo "current_version=$VERSION" >> $GITHUB_OUTPUT
-
-          # Split into major.minor.patch
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-
-          # Increment minor version, reset patch to 0
-          NEW_MINOR=$((MINOR + 1))
-          NEW_VERSION="$MAJOR.$NEW_MINOR.0"
-          NEW_TAG="v$NEW_VERSION"
-
-          # If this is the first version (v0.0.0), start at v1.0.0
-          if [ "$LATEST_TAG" = "v0.0.0" ]; then
-            NEW_VERSION="1.0.0"
-            NEW_TAG="v1.0.0"
-          fi
-
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
-
-          echo "Latest tag: $LATEST_TAG"
-          echo "New tag: $NEW_TAG"
-
-      - name: Generate changelog
-        id: changelog
-        run: |
-          LATEST_TAG="${{ steps.get_tag.outputs.latest_tag }}"
-
-          # Get commits since last tag
-          if [ "$LATEST_TAG" = "v0.0.0" ]; then
-            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges)
-          else
-            COMMITS=$(git log ${LATEST_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
-          fi
-
-          # Create changelog
-          CHANGELOG="## Changes
-          $COMMITS"
-
-          # Save to file for release notes
-          echo "$CHANGELOG" > CHANGELOG.md
-
-          echo "Changelog generated"
+      - name: Determine Version
+        id: version
+        uses: starburst997/auto-version@v1
+        with:
+          token: ${{ steps.bot.outputs.token }}
+          update-major-minor: true
+          git-push: false
+          git-config: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -76,9 +44,9 @@ jobs:
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
 
       - name: Build and push Docker images
         run: |
@@ -93,9 +61,9 @@ jobs:
               docker buildx build \
                 --platform linux/amd64,linux/arm64 \
                 --push \
-                --tag ghcr.io/${{ github.repository_owner }}/devcontainer/${IMAGE_NAME}:${{ steps.get_tag.outputs.new_version }} \
-                --tag ghcr.io/${{ github.repository_owner }}/devcontainer/${IMAGE_NAME}:latest \
-                --build-arg VERSION=${{ steps.get_tag.outputs.new_version }} \
+                --tag ${{ env.REGISTRY }}/${{ github.repository_owner }}/devcontainer/${IMAGE_NAME}:${{ steps.version.outputs.version }} \
+                --tag ${{ env.REGISTRY }}/${{ github.repository_owner }}/devcontainer/${IMAGE_NAME}:latest \
+                --build-arg VERSION=${{ steps.version.outputs.version }} \
                 --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
                 --build-arg GITHUB_SHA=${{ github.sha }} \
                 --cache-from type=gha,scope=${IMAGE_NAME} \
@@ -114,7 +82,7 @@ jobs:
           # Update versions in all template files
           for template in templates/*/devcontainer-template.json; do
             if [ -f "$template" ]; then
-              jq --arg version "${{ steps.get_tag.outputs.new_version }}" '.version = $version' \
+              jq --arg version "${{ steps.version.outputs.version }}" '.version = $version' \
                 "$template" > temp.json && mv temp.json "$template"
             fi
           done
@@ -122,7 +90,7 @@ jobs:
           # Update versions in all feature files
           for feature in features/*/devcontainer-feature.json; do
             if [ -f "$feature" ]; then
-              jq --arg version "${{ steps.get_tag.outputs.new_version }}" '.version = $version' \
+              jq --arg version "${{ steps.version.outputs.version }}" '.version = $version' \
                 "$feature" > temp.json && mv temp.json "$feature"
             fi
           done
@@ -130,7 +98,7 @@ jobs:
           # Publish templates to GHCR
           if [ -d "templates" ]; then
             devcontainer templates publish \
-              -r ghcr.io \
+              -r ${{ env.REGISTRY }} \
               -n ${{ github.repository_owner }}/devcontainer/templates \
               ./templates
           fi
@@ -138,27 +106,15 @@ jobs:
           # Publish features to GHCR with /features/ namespace
           if [ -d "features" ]; then
             devcontainer features publish \
-              -r ghcr.io \
+              -r ${{ env.REGISTRY }} \
               -n ${{ github.repository_owner }}/features \
               ./features
           fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Create and push tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "${{ steps.get_tag.outputs.new_tag }}" -m "Release ${{ steps.get_tag.outputs.new_tag }}"
-          git push origin "${{ steps.get_tag.outputs.new_tag }}"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+      - name: Generate changelog and create release
+        uses: starburst997/commits-logs@v1
         with:
-          tag_name: ${{ steps.get_tag.outputs.new_tag }}
-          name: Release ${{ steps.get_tag.outputs.new_version }}
-          body_path: CHANGELOG.md
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.bot.outputs.token }}
+          git-push: true
