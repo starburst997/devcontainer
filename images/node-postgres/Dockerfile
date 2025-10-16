@@ -13,24 +13,17 @@ ENV POSTGRES_VERSION=${POSTGRES_VERSION} \
     POSTGRES_DB=postgres \
     POSTGRES_PASSWORD=postgres
 
-# Reset shell to bash for installation commands
-SHELL ["/bin/bash", "-c"]
-
 # Install PostgreSQL dependencies
 USER root
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Step 1: Update and install base dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        ca-certificates \
-        gnupg \
-        lsb-release \
-        wget \
-        curl \
-        sudo \
-        supervisor && \
-    rm -rf /var/lib/apt/lists/*
+# Use simpler approach for cross-platform compatibility
+RUN apt-get update || true
+RUN apt-get install -y ca-certificates gnupg
+RUN apt-get install -y curl wget
+RUN apt-get install -y lsb-release sudo supervisor
+RUN rm -rf /var/lib/apt/lists/*
 
 # Step 2: Add PostgreSQL official GPG key
 RUN mkdir -p /usr/share/keyrings && \
