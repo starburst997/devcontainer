@@ -16,32 +16,41 @@ ENV POSTGRES_VERSION=${POSTGRES_VERSION} \
 # Reset shell to bash for installation commands
 SHELL ["/bin/bash", "-c"]
 
-# Install PostgreSQL
+# Install PostgreSQL dependencies
 USER root
-RUN export DEBIAN_FRONTEND=noninteractive \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Step 1: Update and install base dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
         ca-certificates \
         gnupg \
         lsb-release \
         wget \
         curl \
         sudo \
-        supervisor \
-    && rm -rf /var/lib/apt/lists/* \
-    # Add PostgreSQL official GPG key using modern method
-    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg \
-    # Add PostgreSQL APT repository for Bookworm
-    && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
-    # Update and install PostgreSQL
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
+        supervisor && \
+    rm -rf /var/lib/apt/lists/*
+
+# Step 2: Add PostgreSQL official GPG key
+RUN mkdir -p /usr/share/keyrings && \
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
+    gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
+
+# Step 3: Add PostgreSQL APT repository
+RUN echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > \
+    /etc/apt/sources.list.d/pgdg.list
+
+# Step 4: Update package list with new repository
+RUN apt-get update
+
+# Step 5: Install PostgreSQL
+RUN apt-get install -y --no-install-recommends \
         postgresql-${POSTGRES_VERSION} \
         postgresql-client-${POSTGRES_VERSION} \
-        postgresql-contrib-${POSTGRES_VERSION} \
-    # Clean up
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+        postgresql-contrib-${POSTGRES_VERSION} && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create PostgreSQL data directory
 RUN mkdir -p /var/lib/postgresql/data \
