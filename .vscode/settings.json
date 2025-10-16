@@ -11,6 +11,7 @@
     "CONFIGURESSH",
     "createdb",
     "dbaeumer",
+    "dearmor",
     "devcontainers",
     "dpkg",
     "esbenp",
