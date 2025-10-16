@@ -13,40 +13,31 @@ ENV POSTGRES_VERSION=${POSTGRES_VERSION} \
     POSTGRES_DB=postgres \
     POSTGRES_PASSWORD=postgres
 
-# Temporarily switch to sh for QEMU compatibility during installation
-# The base image uses zsh which causes issues with QEMU emulator on ARM64
-SHELL ["/bin/sh", "-c"]
-
 # Install PostgreSQL dependencies
 USER root
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Step 1: Update and install base dependencies
-RUN apt-get update
-RUN apt-get install -y ca-certificates gnupg
-RUN apt-get install -y curl wget
-RUN apt-get install -y lsb-release sudo supervisor
-RUN rm -rf /var/lib/apt/lists/*
-
-# Step 2: Add PostgreSQL official GPG key
-RUN mkdir -p /usr/share/keyrings && \
-    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
-    gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
-
-# Step 3: Add PostgreSQL APT repository
-RUN echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > \
-    /etc/apt/sources.list.d/pgdg.list
-
-# Step 4: Update package list with new repository
-RUN apt-get update
-
-# Step 5: Install PostgreSQL
-RUN apt-get install -y --no-install-recommends \
+# Install PostgreSQL in a single layer to minimize QEMU invocations
+RUN set -ex \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        gnupg \
+        curl \
+        wget \
+        lsb-release \
+        sudo \
+        supervisor \
+    && mkdir -p /usr/share/keyrings \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
         postgresql-${POSTGRES_VERSION} \
         postgresql-client-${POSTGRES_VERSION} \
-        postgresql-contrib-${POSTGRES_VERSION} && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+        postgresql-contrib-${POSTGRES_VERSION} \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create PostgreSQL data directory
 RUN mkdir -p /var/lib/postgresql/data \

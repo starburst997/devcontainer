@@ -59,7 +59,10 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
 # Install pnpm
 RUN npm install -g pnpm
 
-SHELL ["/bin/zsh", "-c"]
+# Debug: Check which shell is being used BEFORE switching to zsh
+RUN echo "Current shell before zsh switch: $0" && echo "Shell version: $($0 --version || echo 'version not available')" && echo "PATH: $PATH" && ls -la /bin/sh /bin/bash /bin/zsh || true
+
+#SHELL ["/bin/zsh", "-c"]
 
 # Version argument passed from build
 ARG VERSION
